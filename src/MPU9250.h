@@ -85,9 +85,6 @@ class MPU9250{
     float getGyroX_rads();
     float getGyroY_rads();
     float getGyroZ_rads();
-    float getMagX_uT();
-    float getMagY_uT();
-    float getMagZ_uT();
     float getTemperature_C();
     
     int calibrateGyro();
@@ -107,16 +104,8 @@ class MPU9250{
     void setAccelCalX(float bias,float scaleFactor);
     void setAccelCalY(float bias,float scaleFactor);
     void setAccelCalZ(float bias,float scaleFactor);
-    int calibrateMag();
-    float getMagBiasX_uT();
-    float getMagScaleFactorX();
-    float getMagBiasY_uT();
-    float getMagScaleFactorY();
-    float getMagBiasZ_uT();
-    float getMagScaleFactorZ();
-    void setMagCalX(float bias,float scaleFactor);
-    void setMagCalY(float bias,float scaleFactor);
-    void setMagCalZ(float bias,float scaleFactor);
+    float _axmax, _aymax, _azmax;
+    float _axmin, _aymin, _azmin;
   protected:
     // i2c
     uint8_t _address;
@@ -150,7 +139,6 @@ class MPU9250{
     // scale factors
     float _accelScale;
     float _gyroScale;
-    float _magScaleX, _magScaleY, _magScaleZ;
     const float _tempScale = 333.87f;
     const float _tempOffset = 21.0f;
     // configuration
@@ -164,26 +152,10 @@ class MPU9250{
     float _gxb, _gyb, _gzb;
     // accel bias and scale factor estimation
     double _axbD, _aybD, _azbD;
-    float _axmax, _aymax, _azmax;
-    float _axmin, _aymin, _azmin;
     float _axb, _ayb, _azb;
     float _axs = 1.0f;
     float _ays = 1.0f;
     float _azs = 1.0f;
-    // magnetometer bias and scale factor estimation
-    uint16_t _maxCounts = 1000;
-    float _deltaThresh = 0.3f;
-    uint8_t _coeff = 8;
-    uint16_t _counter;
-    float _framedelta, _delta;
-    float _hxfilt, _hyfilt, _hzfilt;
-    float _hxmax, _hymax, _hzmax;
-    float _hxmin, _hymin, _hzmin;
-    float _hxb, _hyb, _hzb;
-    float _hxs = 1.0f;
-    float _hys = 1.0f;
-    float _hzs = 1.0f;
-    float _avgs;
     // transformation matrix
     /* transform the accel and gyro axes to match the magnetometer axes */
     const int16_t tX[3] = {0,  1,  0}; 
@@ -251,61 +223,12 @@ class MPU9250{
     const uint8_t LP_ACCEL_ODR = 0x1E;
     const uint8_t WOM_THR = 0x1F;
     const uint8_t WHO_AM_I = 0x75;
-    const uint8_t FIFO_EN = 0x23;
-    const uint8_t FIFO_TEMP = 0x80;
-    const uint8_t FIFO_GYRO = 0x70;
-    const uint8_t FIFO_ACCEL = 0x08;
-    const uint8_t FIFO_MAG = 0x01;
-    const uint8_t FIFO_COUNT = 0x72;
-    const uint8_t FIFO_READ = 0x74;
-    // AK8963 registers
-    const uint8_t AK8963_I2C_ADDR = 0x0C;
-    const uint8_t AK8963_HXL = 0x03; 
-    const uint8_t AK8963_CNTL1 = 0x0A;
-    const uint8_t AK8963_PWR_DOWN = 0x00;
-    const uint8_t AK8963_CNT_MEAS1 = 0x12;
-    const uint8_t AK8963_CNT_MEAS2 = 0x16;
-    const uint8_t AK8963_FUSE_ROM = 0x0F;
-    const uint8_t AK8963_CNTL2 = 0x0B;
-    const uint8_t AK8963_RESET = 0x01;
-    const uint8_t AK8963_ASA = 0x10;
-    const uint8_t AK8963_WHO_AM_I = 0x00;
+
     // private functions
     int writeRegister(uint8_t subAddress, uint8_t data);
     int readRegisters(uint8_t subAddress, uint8_t count, uint8_t* dest);
-    int writeAK8963Register(uint8_t subAddress, uint8_t data);
-    int readAK8963Registers(uint8_t subAddress, uint8_t count, uint8_t* dest);
     int whoAmI();
-    int whoAmIAK8963();
 };
 
-class MPU9250FIFO: public MPU9250 {
-  public:
-    using MPU9250::MPU9250;
-    int enableFifo(bool accel,bool gyro,bool mag,bool temp);
-    int readFifo();
-    void getFifoAccelX_mss(size_t *size,float* data);
-    void getFifoAccelY_mss(size_t *size,float* data);
-    void getFifoAccelZ_mss(size_t *size,float* data);
-    void getFifoGyroX_rads(size_t *size,float* data);
-    void getFifoGyroY_rads(size_t *size,float* data);
-    void getFifoGyroZ_rads(size_t *size,float* data);
-    void getFifoMagX_uT(size_t *size,float* data);
-    void getFifoMagY_uT(size_t *size,float* data);
-    void getFifoMagZ_uT(size_t *size,float* data);
-    void getFifoTemperature_C(size_t *size,float* data);
-  protected:
-    // fifo
-    bool _enFifoAccel,_enFifoGyro,_enFifoMag,_enFifoTemp;
-    size_t _fifoSize,_fifoFrameSize;
-    float _axFifo[85], _ayFifo[85], _azFifo[85];
-    size_t _aSize;
-    float _gxFifo[85], _gyFifo[85], _gzFifo[85];
-    size_t _gSize;
-    float _hxFifo[73], _hyFifo[73], _hzFifo[73];
-    size_t _hSize;
-    float _tFifo[256];
-    size_t _tSize;
-};
 
 #endif
