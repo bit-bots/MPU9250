@@ -64,7 +64,6 @@ int MPU9250::begin(){
   }
   // c0x70 for mpu6500
   if((whoAmI() != 0x70)){
-    Serial.println(whoAmI());
     return -5;
   }
   // enable accelerometer and gyro
@@ -90,7 +89,7 @@ int MPU9250::begin(){
   if(writeRegister(CONFIG,GYRO_DLPF_184) < 0){ // setting gyro bandwidth to 184Hz
     return -10;
   }
-  _bandwidth = DLPF_BANDWIDTH_184HZ;
+  _bandwidth = DLPF_BANDWIDTH_NO_FILTER;
   // setting the sample rate divider to 0 as default
   if(writeRegister(SMPDIV,0x00) < 0){ 
     return -11;
@@ -193,6 +192,15 @@ int MPU9250::setDlpfBandwidth(DlpfBandwidth bandwidth) {
   // use low speed SPI for register setting
   _useSPIHS = false;
   switch(bandwidth) {
+    case DLPF_BANDWIDTH_NO_FILTER: {
+      if(writeRegister(ACCEL_CONFIG2,ACCEL_DLPF_NO_FILTER) < 0){ // setting accel bandwidth to 184Hz
+        return -1;
+      } 
+      if(writeRegister(CONFIG,GYRO_DLPF_NO_FILTER) < 0){ // setting gyro bandwidth to 184Hz
+        return -2;
+      }
+      break;
+    }
     case DLPF_BANDWIDTH_184HZ: {
       if(writeRegister(ACCEL_CONFIG2,ACCEL_DLPF_184) < 0){ // setting accel bandwidth to 184Hz
         return -1;
@@ -256,10 +264,6 @@ int MPU9250::setDlpfBandwidth(DlpfBandwidth bandwidth) {
 int MPU9250::setSrd(uint8_t srd) {
   // use low speed SPI for register setting
   _useSPIHS = false;
-  /* setting the sample rate divider to 19 to facilitate setting up magnetometer */
-  if(writeRegister(SMPDIV,19) < 0){ // setting the sample rate divider
-    return -1;
-  }
   /* setting the sample rate divider */
   if(writeRegister(SMPDIV,srd) < 0){ // setting the sample rate divider
     return -4;
@@ -364,6 +368,7 @@ int MPU9250::calibrateGyro() {
   if (setDlpfBandwidth(DLPF_BANDWIDTH_20HZ) < 0) {
     return -2;
   }
+  uint8_t old_srd = _srd;
   if (setSrd(19) < 0) {
     return -3;
   }
@@ -390,7 +395,7 @@ int MPU9250::calibrateGyro() {
   if (setDlpfBandwidth(_bandwidth) < 0) {
     return -5;
   }
-  if (setSrd(_srd) < 0) {
+  if (setSrd(old_srd) < 0) {
     return -6;
   }
   return 1;
@@ -429,7 +434,7 @@ void MPU9250::setGyroBiasZ_rads(float bias) {
 /* finds bias and scale factor calibration for the accelerometer,
 this should be run for each axis in each direction (6 total) to find
 the min and max values along each */
-int MPU9250::calibrateAccel() {
+int MPU9250::calibrateAccel(float threshold) {
   // set the range, bandwidth, and srd
   if (setAccelRange(ACCEL_RANGE_2G) < 0) {
     return -1;
@@ -437,6 +442,7 @@ int MPU9250::calibrateAccel() {
   if (setDlpfBandwidth(DLPF_BANDWIDTH_20HZ) < 0) {
     return -2;
   }
+  uint8_t old_srd = _srd;
   if (setSrd(19) < 0) {
     return -3;
   }
@@ -452,35 +458,35 @@ int MPU9250::calibrateAccel() {
     _azbD += (getAccelZ_mss()/_azs + _azb)/((double)_numSamples);
     delay(20);
   }
-  if (_axbD > 9.0f) {
+  if (_axbD > threshold) {
     _axmax = (float)_axbD;
   }
-  if (_aybD > 9.0f) {
+  if (_aybD > threshold) {
     _aymax = (float)_aybD;
   }
-  if (_azbD > 9.0f) {
+  if (_azbD > threshold) {
     _azmax = (float)_azbD;
   }
-  if (_axbD < -9.0f) {
+  if (_axbD < -threshold) {
     _axmin = (float)_axbD;
   }
-  if (_aybD < -9.0f) {
+  if (_aybD < -threshold) {
     _aymin = (float)_aybD;
   }
-  if (_azbD < -9.0f) {
+  if (_azbD < -threshold) {
     _azmin = (float)_azbD;
   }
 
   // find bias and scale factor
-  if ((abs(_axmin) > 9.0f) && (abs(_axmax) > 9.0f)) {
+  if ((abs(_axmin) > threshold) && (abs(_axmax) >  threshold)) {
     _axb = (_axmin + _axmax) / 2.0f;
     _axs = G/((abs(_axmin) + abs(_axmax)) / 2.0f);
   }
-  if ((abs(_aymin) > 9.0f) && (abs(_aymax) > 9.0f)) {
+  if ((abs(_aymin) > threshold) && (abs(_aymax) > threshold)) {
     _ayb = (_aymin + _aymax) / 2.0f;
     _ays = G/((abs(_aymin) + abs(_aymax)) / 2.0f);
   }
-  if ((abs(_azmin) > 9.0f) && (abs(_azmax) > 9.0f)) {
+  if ((abs(_azmin) > threshold) && (abs(_azmax) > threshold)) {
     _azb = (_azmin + _azmax) / 2.0f;
     _azs = G/((abs(_azmin) + abs(_azmax)) / 2.0f);
   }
@@ -492,7 +498,7 @@ int MPU9250::calibrateAccel() {
   if (setDlpfBandwidth(_bandwidth) < 0) {
     return -5;
   }
-  if (setSrd(_srd) < 0) {
+  if (setSrd(old_srd) < 0) {
     return -6;
   }
   return 1;  

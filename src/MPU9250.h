@@ -46,6 +46,7 @@ class MPU9250{
     };
     enum DlpfBandwidth
     {
+      DLPF_BANDWIDTH_NO_FILTER,
       DLPF_BANDWIDTH_184HZ,
       DLPF_BANDWIDTH_92HZ,
       DLPF_BANDWIDTH_41HZ,
@@ -94,7 +95,7 @@ class MPU9250{
     void setGyroBiasX_rads(float bias);
     void setGyroBiasY_rads(float bias);
     void setGyroBiasZ_rads(float bias);
-    int calibrateAccel();
+    int calibrateAccel(float threshold);
     float getAccelBiasX_mss();
     float getAccelScaleFactorX();
     float getAccelBiasY_mss();
@@ -106,6 +107,7 @@ class MPU9250{
     void setAccelCalZ(float bias,float scaleFactor);
     float _axmax, _aymax, _azmax;
     float _axmin, _aymin, _azmin;
+    int readRegisters(uint8_t subAddress, uint8_t count, uint8_t* dest);
   protected:
     // i2c
     uint8_t _address;
@@ -180,6 +182,7 @@ class MPU9250{
     const uint8_t GYRO_FS_SEL_1000DPS = 0x10;
     const uint8_t GYRO_FS_SEL_2000DPS = 0x18;
     const uint8_t ACCEL_CONFIG2 = 0x1D;
+    const uint8_t ACCEL_DLPF_NO_FILTER = 0x00;
     const uint8_t ACCEL_DLPF_184 = 0x01;
     const uint8_t ACCEL_DLPF_92 = 0x02;
     const uint8_t ACCEL_DLPF_41 = 0x03;
@@ -187,6 +190,7 @@ class MPU9250{
     const uint8_t ACCEL_DLPF_10 = 0x05;
     const uint8_t ACCEL_DLPF_5 = 0x06;
     const uint8_t CONFIG = 0x1A;
+    const uint8_t GYRO_DLPF_NO_FILTER = 0x00;
     const uint8_t GYRO_DLPF_184 = 0x01;
     const uint8_t GYRO_DLPF_92 = 0x02;
     const uint8_t GYRO_DLPF_41 = 0x03;
@@ -226,7 +230,6 @@ class MPU9250{
 
     // private functions
     int writeRegister(uint8_t subAddress, uint8_t data);
-    int readRegisters(uint8_t subAddress, uint8_t count, uint8_t* dest);
     int whoAmI();
 };
 
