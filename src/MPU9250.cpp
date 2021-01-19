@@ -313,12 +313,13 @@ int MPU9250::readSensor() {
   _gycounts = (((int16_t)_buffer[10]) << 8) | _buffer[11];
   _gzcounts = (((int16_t)_buffer[12]) << 8) | _buffer[13];
   // transform and convert to float values
-  _ax = (((float)(tX[0]*_axcounts + tX[1]*_aycounts + tX[2]*_azcounts) * _accelScale) - _axb)*_axs;
-  _ay = (((float)(tY[0]*_axcounts + tY[1]*_aycounts + tY[2]*_azcounts) * _accelScale) - _ayb)*_ays;
-  _az = (((float)(tZ[0]*_axcounts + tZ[1]*_aycounts + tZ[2]*_azcounts) * _accelScale) - _azb)*_azs;
-  _gx = ((float)(tX[0]*_gxcounts + tX[1]*_gycounts + tX[2]*_gzcounts) * _gyroScale) - _gxb;
-  _gy = ((float)(tY[0]*_gxcounts + tY[1]*_gycounts + tY[2]*_gzcounts) * _gyroScale) - _gyb;
-  _gz = ((float)(tZ[0]*_gxcounts + tZ[1]*_gycounts + tZ[2]*_gzcounts) * _gyroScale) - _gzb;
+
+  _ax = (((float)_axcounts * _accelScale) - _axb)*_axs;
+  _ay = (((float)_aycounts * _accelScale) - _ayb)*_ays;
+  _az = (((float)_azcounts * _accelScale) - _azb)*_azs;
+  _gx = ((float)_gxcounts * _gyroScale) - _gxb;
+  _gy = ((float)_gycounts * _gyroScale) - _gyb;
+  _gz = ((float)_gzcounts * _gyroScale) - _gzb;
   _t = ((((float) _tcounts) - _tempOffset)/_tempScale) + _tempOffset;
   return 1;
 }
